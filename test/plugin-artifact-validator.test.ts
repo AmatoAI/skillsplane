@@ -51,6 +51,34 @@ test("validates the canonical portable source package", async () => {
   expectSuccessful(await runValidator(["--root", portableRoot, "--source-mode"]));
 });
 
+test.each([
+  [
+    "repeated Markdown list numbers",
+    (skill: string) => skill.replace(/^\d+\. /gm, "1. "),
+  ],
+  ["bullet lists", (skill: string) => skill.replace(/^\d+\. /gm, "- ")],
+  [
+    "split synchronization steps",
+    (skill: string) =>
+      skill.replace("   Then call `sync_skill`", "4. Then call `sync_skill`"),
+  ],
+  [
+    "combined synchronization steps",
+    (skill: string) =>
+      skill.replace("\n3. Require a complete,", "\n   Require a complete,"),
+  ],
+])("accepts %s without weakening workflow checks", async (_name, transform) => {
+  const artifact = await copyArtifact();
+  const skillPath = join(artifact, "skills", "use-workspace-skills", "SKILL.md");
+  const original = await readFile(skillPath, "utf8");
+  const edited = transform(original);
+  expect(edited).not.toBe(original);
+  await writeFile(skillPath, edited);
+  expectSuccessful(
+    await runValidator(artifactArgs(artifact, { canonicalSkill: skillPath })),
+  );
+});
+
 test.skipIf(process.platform === "win32")(
   "runs validation when the executable path is a symlink",
   async () => {
@@ -501,67 +529,127 @@ test.each([
     "literal substring search semantics",
     "case-insensitive literal\n   substring matching",
     "semantic matching",
-    /find and apply step 1/,
+    /find and apply requirement 1/,
   ],
   [
     "exact named-Skill query",
     "use only that exact slug or name as the query",
     "append task details to that slug or name",
-    /find and apply step 1/,
+    /find and apply requirement 1/,
   ],
   [
     "short task query",
     "one short, distinctive term or contiguous phrase",
     "a full natural-language request",
-    /find and apply step 1/,
+    /find and apply requirement 1/,
   ],
   [
     "shorter lookup retry",
     "retry once with a shorter core term from the task",
     "retry once with additional keywords from the task",
-    /find and apply step 6/,
+    /find and apply requirement 6/,
   ],
   [
     "unbound search semantics",
     "`search` without a filter",
     "`search` with an inferred filter",
-    /find and apply step 2/,
+    /find and apply requirement 2/,
   ],
   [
     "Workspace selection semantics",
     "`WORKSPACE_FILTER_REQUIRED`, call\n   `list_workspaces`, ask the user to choose",
     "`WORKSPACE_FILTER_REQUIRED`, call\n   `search`, choose a Workspace automatically",
-    /find and apply step 3/,
+    /find and apply requirement 3/,
   ],
   [
     "tracked binding semantics",
     "git ls-files --error-unmatch -- .skillsplane.json",
     "git status --short -- .skillsplane.json",
-    /connect step 5/,
+    /connect requirement 5/,
   ],
   [
-    "local companion boundary",
-    "Do not traverse, inspect, read, validate, or upload",
-    "Do traverse, inspect, read, validate, and upload",
-    /local companion entries/,
+    "local companion inclusion boundary",
+    "Reject symlinks, reparse points, dangling links, special",
+    "Allow symlinks, reparse points, dangling links, and special",
+    /local companion entries must be bounded, validated, and included/,
+  ],
+  [
+    "executable mode preservation",
+    "Set execute bits only for scripts declared executable",
+    "Keep default file modes",
+    /preserve declared executable modes/,
+  ],
+  [
+    "empty companion directory semantics",
+    "Empty real supported directories are valid and contribute no entries to `files`",
+    "Empty supported directories are invalid",
+    /empty supported directories/,
+  ],
+  [
+    "safe source handle reads",
+    "Read bounded bytes from that same verified handle, not by reopening its path",
+    "Read bytes by reopening the source path",
+    /safe source reads/,
+  ],
+  [
+    "source read ancestor protection",
+    "prevent redirection for every path component",
+    "inspect only the final path component",
+    /safe source reads/,
+  ],
+  [
+    "shared sync safe read ordering",
+    /Apply the safe-handle reading rule above after\s+Workspace resolution and immediately before `sync_skill`/,
+    "Reuse the earlier source validation after Workspace resolution",
+    /shared sync must resolve, safely read, send, then validate/,
+  ],
+  [
+    "lazy companion fetch",
+    "Fetch only the companions needed",
+    "Fetch all companions",
+    /find and apply requirement 7/,
+  ],
+  [
+    "current-state fetch boundary",
+    "separate calls are not a pinned snapshot",
+    "separate calls are a pinned snapshot",
+    /find and apply requirement 7/,
+  ],
+  [
+    "portable path collisions",
+    "file/directory ancestor conflicts",
+    "optional path warnings",
+    /portable paths/,
+  ],
+  [
+    "license file scope",
+    "root regular non-link files named exactly",
+    "arbitrary root files",
+    /portable paths/,
+  ],
+  [
+    "explicit replacement semantics",
+    "Never omit `files`",
+    "Omit files freely",
+    /explicit replacement semantics/,
   ],
   [
     "explicit synchronization full-set validation",
     "Complete this validation before calling `list_workspaces` or `sync_skill`",
     "Call `list_workspaces` before completing this validation",
-    /explicit sync step 2/,
+    /explicit sync must validate every immediate entry/,
   ],
   [
     "explicit synchronization full-set enumeration",
     "validate every immediate local Skill entry",
     "validate every selected local Skill entry",
-    /explicit sync step 2/,
+    /explicit sync must validate every immediate entry/,
   ],
   [
     "explicit synchronization response validation",
     "Require a complete, schema-valid successful response for every call",
     "Trust any response returned for every call",
-    /explicit sync step 5/,
+    /shared sync must resolve, safely read, send, then validate/,
   ],
   [
     "repository checks before synchronization",
@@ -595,7 +683,7 @@ test.each([
   ],
   [
     "invalid source blocking",
-    /invalid immediate entry or required file\s+blocks the intended\s+agent-initiated push/,
+    /invalid immediate entry, required file,\s+or supported companion blocks the intended agent-initiated push/,
     "invalid immediate entries and required files permit the push",
     /validate every target repository and local Skill source/,
   ],
@@ -607,9 +695,9 @@ test.each([
   ],
   [
     "binding visibility for an empty Skill set",
-    "using the pagination rule above even\n   when the local Skill set is empty",
-    "using the pagination rule above only\n   when local Skills exist",
-    /fail closed on invalid or missing repository bindings/,
+    "pagination rule above, even when the selected Skill set is empty",
+    "pagination rule above only when selected Skills exist",
+    /shared sync must resolve the destination/,
   ],
   [
     "missing binding blocking",
@@ -619,32 +707,32 @@ test.each([
   ],
   [
     "all-local-Skill synchronization",
-    /call\s+`sync_skill` once for every local Skill/,
-    "call `sync_skill` once for every changed local Skill",
+    "Select every local Skill and follow",
+    "Select every changed local Skill and follow",
     /synchronize every local Skill without cached omissions/,
   ],
   [
     "negated all-local-Skill synchronization",
-    /call\s+`sync_skill` once for every local Skill/,
-    "never call `sync_skill` once for every local Skill",
+    "Select every local Skill and follow",
+    "Never Select every local Skill and follow",
     /synchronize every local Skill without cached omissions/,
   ],
   [
     "adverbially negated all-local-Skill synchronization",
-    /call\s+`sync_skill` once for every local Skill/,
-    "do not ever call `sync_skill` once for every local Skill",
+    "Select every local Skill and follow",
+    "Do not ever Select every local Skill and follow",
     /synchronize every local Skill without cached omissions/,
   ],
   [
     "step-prefixed negated all-local-Skill synchronization",
-    "4. Read the complete current content",
-    "4. Never Read the complete current content",
+    "4. Select every local Skill and follow",
+    "4. Never Select every local Skill and follow",
     /synchronize every local Skill without cached omissions/,
   ],
   [
     "contradictory appended all-local-Skill synchronization",
     "does not make claims about those pushes.",
-    "does not make claims about those pushes. Never call `sync_skill` once for every local Skill.",
+    "does not make claims about those pushes. Never Select every local Skill and follow the shared workflow.",
     /state all-local-Skill synchronization exactly once/,
   ],
   [
@@ -673,15 +761,15 @@ test.each([
   ],
   [
     "synchronization response failures block the push",
-    "missing result blocks the push",
-    "missing result permits the push",
-    /validate every synchronization response and block failures/,
+    "Any failure blocks the push",
+    "Any failure permits the push",
+    /synchronize every local Skill without cached omissions/,
   ],
   [
-    "the server-derived hash boundary",
-    "Do not recompute or compare a local hash",
-    "Recompute and compare a local hash",
-    /validate every synchronization response and block failures/,
+    "internal checks without cached omissions",
+    /do not require public hashes\s+or use prior results to skip synchronization/,
+    "require public hashes and use prior results to skip synchronization",
+    /shared sync must validate every response/,
   ],
   [
     "invocation-final source revalidation",
@@ -697,7 +785,7 @@ test.each([
   ],
   [
     "source changes resolve every repository again",
-    /resolve every target repository\s+again/,
+    /resolve every target\s+repository again/,
     "reuse the previous target repository set",
     /revalidate source and binding state before push command or tool invocation/,
   ],
@@ -709,13 +797,13 @@ test.each([
   ],
   [
     "source changes rerun required checks",
-    /rerun every non-pushing\s+required check/,
+    /rerun every\s+non-pushing required check/,
     "reuse the prior non-pushing required check results",
     /revalidate source and binding state before push command or tool invocation/,
   ],
   [
     "source changes do not negate target resolution",
-    /resolve every target repository\s+again/,
+    /resolve every target\s+repository again/,
     "do not resolve every target repository again",
     /revalidate source and binding state before push command or tool invocation/,
   ],
@@ -745,7 +833,7 @@ test.each([
   ],
   [
     "source changes keep checks before resynchronization",
-    /rerun every non-pushing\s+required check, then validate and synchronize every local Skill again/,
+    /rerun every\s+non-pushing required check, then validate and synchronize every local Skill\s+again/,
     "validate and synchronize every local Skill again, then rerun every non-pushing required check",
     /revalidate source and binding state before push command or tool invocation/,
   ],
@@ -821,6 +909,60 @@ test.each([
     "intercepts pushes independently initiated by a user, IDE, external terminal, or another",
     /cooperative and external-push boundaries/,
   ],
+  [
+    "explicit synchronization calls the shared workflow",
+    "Follow [Synchronize selected bundles](#synchronize-selected-bundles), then report",
+    "Skip synchronization, then report",
+    /explicit sync must select only requested Skills before shared sync and report/,
+  ],
+  [
+    "shared response identity",
+    "same `workspaceId` and `slug`",
+    "any `workspaceId` and `slug`",
+    /shared sync must validate every response/,
+  ],
+  [
+    "shared response file count",
+    "`fileCount` matching the sent companions",
+    "any `fileCount`",
+    /shared sync must validate every response/,
+  ],
+  [
+    "shared response failure handling",
+    "missing result stops the calling",
+    "missing result permits the calling",
+    /shared sync must validate every response/,
+  ],
+  [
+    "shared validation precondition",
+    /after validating local\s+sources and the tracked binding and selecting their targets/,
+    "before validating local sources or the tracked binding",
+    /shared sync must follow source and binding validation/,
+  ],
+  [
+    "Unicode collision checks",
+    "Unicode default full case folding",
+    "ordinary lowercase conversion",
+    /source and manifest collision checks must use Unicode full case folding/,
+  ],
+  [
+    "post-resolution complete source enumeration",
+    "re-enumerate and validate every immediate local",
+    "revalidate only selected local",
+    /shared sync must resolve, safely read, send, then validate/,
+  ],
+  [
+    "post-resolution unselected source validation",
+    "including unselected Skills and an empty set",
+    "excluding unselected Skills and an empty set",
+    /shared sync must revalidate the complete source set/,
+  ],
+  [
+    "post-resolution source-change restart",
+    "If the Skill set or any validated source changed, discard the payload and",
+    "If only the selected Skill changed, keep the payload and",
+    /shared sync must revalidate the complete source set/,
+  ],
 ])("validates %s independently of canonical bytes", async (_name, from, to, error) => {
   const artifact = await copyArtifact();
   const skillPath = join(artifact, "skills", "use-workspace-skills", "SKILL.md");
@@ -840,56 +982,19 @@ test.each([
 });
 
 test.each([
-  [
-    "explicit sync rejects a 63-character hash",
-    "Explicit synchronization",
-    "^sha256:[a-f0-9]{63}$",
-    /explicit sync step 5 must require the exact contentHash schema/,
-  ],
-  [
-    "explicit sync rejects uppercase hash characters",
-    "Explicit synchronization",
-    "^sha256:[A-F0-9]{64}$",
-    /explicit sync step 5 must require the exact contentHash schema/,
-  ],
-  [
-    "explicit sync rejects a prefix-only hash schema",
-    "Explicit synchronization",
-    "sha256:",
-    /explicit sync step 5 must require the exact contentHash schema/,
-  ],
-  [
-    "push sync rejects a 63-character hash",
-    "Synchronize before any agent-initiated push",
-    "^sha256:[a-f0-9]{63}$",
-    /validate every synchronization response and block failures/,
-  ],
-  [
-    "push sync rejects uppercase hash characters",
-    "Synchronize before any agent-initiated push",
-    "^sha256:[A-F0-9]{64}$",
-    /validate every synchronization response and block failures/,
-  ],
-  [
-    "push sync rejects a prefix-only hash schema",
-    "Synchronize before any agent-initiated push",
-    "sha256:",
-    /validate every synchronization response and block failures/,
-  ],
-])("%s", async (_name, heading, replacement, error) => {
+  "contentHash",
+  "bundleHash",
+])("rejects public %s requirements in the static Skill", async (field) => {
   const artifact = await copyArtifact();
   const skillPath = join(artifact, "skills", "use-workspace-skills", "SKILL.md");
   const skill = await readFile(skillPath, "utf8");
-  await writeFile(
-    skillPath,
-    replaceInSecondLevelSection(skill, heading, "^sha256:[a-f0-9]{64}$", replacement),
-  );
+  await writeFile(skillPath, `${skill}\nRequire the public ${field} in every receipt.\n`);
 
   const result = await runValidator(
     artifactArgs(artifact, { canonicalSkill: skillPath }),
   );
   expect(result.code).toBe(1);
-  expect(result.stderr).toMatch(error);
+  expect(result.stderr).toMatch(/hashes must remain internal/);
 });
 
 test.each([
@@ -1128,23 +1233,6 @@ test.each([
     await runValidator(artifactArgs(artifact, { canonicalSkill: skillPath })),
   );
 });
-
-function replaceInSecondLevelSection(
-  markdown: string,
-  heading: string,
-  from: string,
-  to: string,
-) {
-  const marker = `## ${heading}`;
-  const headingStart = markdown.indexOf(marker);
-  expect(headingStart).not.toBe(-1);
-  const contentStart = headingStart + marker.length;
-  const followingHeading = markdown.indexOf("\n## ", contentStart);
-  const contentEnd = followingHeading < 0 ? markdown.length : followingHeading;
-  const section = markdown.slice(contentStart, contentEnd);
-  expect(section).toContain(from);
-  return `${markdown.slice(0, contentStart)}${section.replace(from, to)}${markdown.slice(contentEnd)}`;
-}
 
 function artifactArgs(
   root: string,

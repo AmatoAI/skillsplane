@@ -16,8 +16,8 @@ under [Apache 2.0](LICENSE).
   instructions to an implementation, review, or other task.
 - **Connect a repository.** Choose the Workspace your repository uses for Skill
   discovery and synchronization.
-- **Share what you author.** Sync a selected repository-local `SKILL.md` back to
-  the Workspace. Before an agent-initiated push, the bundled workflow syncs all
+- **Share what you author.** Sync a selected repository-local `SKILL.md` and its
+  supported companion files to the Workspace. Before an agent-initiated push, the bundled workflow syncs all
   local Skills in each target repository.
 
 The Plugin carries the workflow; your Workspace holds the Skills. Authentication
@@ -85,8 +85,11 @@ plugins/agent-plugins/skillsplane/
 └── skills/use-workspace-skills/SKILL.md
 ```
 
-The Remote MCP endpoint is `https://skillsplane.com/api/mcp`. The Plugin uses four
-tools: `list_workspaces`, `search`, `fetch`, and `sync_skill`.
+The Remote MCP endpoint is `https://skillsplane.com/api/mcp`. The bundle workflow
+requires five tools: `list_workspaces`, `search`, `fetch`, `fetch_skill_file`, and
+`sync_skill`. Bundle support requires the matching hosted-service rollout; source
+validation alone does not establish production availability. Do not activate this
+workflow through the public catalogs until the live service checks pass.
 
 Codex and Cursor catalogs both reference this one standard package. No client
 adapter or build step is required. Client installation support does not establish
@@ -98,8 +101,12 @@ catalog listings are separate. See the
 
 - A tracked `.skillsplane.json` records only the repository's Workspace ID. The
   server checks your account's access on every call.
-- Sync sends repository-local `.agents/skills/<slug>/SKILL.md` content. Companion
-  files such as `scripts/`, `references/`, and `assets/` stay local in this version.
+- Sync sends repository-local `.agents/skills/<slug>/SKILL.md` and bounded files
+  under `scripts/`, `references/`, and `assets/`, plus supported root license and
+  notice files. `agents/` stays local. Hashes are internal server checks, not
+  user-facing synchronization results.
+- Sync replaces the complete bundle: omitted companions are deleted, and an empty
+  companion list removes all companions. There is no remote history or undo.
 - The Plugin relies on host-managed OAuth and does not maintain its own token
   store or offline Skill cache. The client controls permissions and conversation
   retention.

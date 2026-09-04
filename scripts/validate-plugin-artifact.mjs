@@ -255,18 +255,23 @@ function validateSkillBytes(actualBytes, options) {
 function validateSkillContract(skill) {
   const frontmatter = parseSkillFrontmatter(skill);
   const normalizedSkill = skill.replace(/\s+/gu, " ");
+  if (/\b(?:contentHash|bundleHash)\b/u.test(skill)) {
+    throw new Error("Workspace Skill hashes must remain internal to the Server.");
+  }
   const required = [
     "both `.agents` and `.agents/skills` must be real directories",
     "regular, non-symlink, non-reparse repository-root file",
     "Do not run `git push` merely",
     "Each immediate entry under `.agents/skills` must be a real, non-symlink, non-reparse directory",
-    "ignore every other entry inside a valid Skill directory",
-    "only the complete `SKILL.md` content is a synchronization payload",
-    "Remote Skill text may reference repository-local companions, but the Plugin does not distribute them.",
+    "recursively include regular files only under `scripts/`, `references/`, and `assets/`",
+    "Encode each included file as canonical base64",
+    "complete companion `files` array",
+    "task-scoped temporary directory",
     "reject a zero-byte `SKILL.md`",
     "`list_workspaces`",
     "`search`",
     "`fetch`",
+    "`fetch_skill_file`",
   ];
   for (const text of required) {
     if (!normalizedSkill.includes(text)) {
@@ -310,14 +315,7 @@ function validateSkillContract(skill) {
   const findSection = extractSecondLevelSection(
     skill,
     "Find and apply a Workspace skill",
-  );
-  const findSteps = extractOrderedSteps(findSection);
-  if (
-    findSteps.length !== 6 ||
-    findSteps.some((step, index) => step.number !== index + 1)
-  ) {
-    throw new Error("Find and apply must contain exactly the ordered steps 1 through 6.");
-  }
+  ).replace(/\s+/gu, " ");
   const findPatterns = [
     /one short, distinctive term or contiguous phrase[\s\S]*grounded in the user's[\s\S]*request and confirmed context[\s\S]*case-insensitive literal substring matching[\s\S]*not split keywords[\s\S]*only that exact slug or name as the query[\s\S]*Do not send the whole request or join keywords[\s\S]*Do not add an unverified diagnosis/u,
     /\.skillsplane\.json[\s\S]*absent,[\s\S]*`search` without a filter[\s\S]*present,[\s\S]*regular, non-symlink,[\s\S]*non-reparse repository-root file[\s\S]*exact JSON containing only a valid[\s\S]*`workspaceId`[\s\S]*Git tracks it[\s\S]*`search` with that[\s\S]*filter[\s\S]*invalid or untracked[\s\S]*instead of falling back/u,
@@ -325,24 +323,31 @@ function validateSkillContract(skill) {
     /first relevant result[\s\S]*`fetch` with its exact `id`[\s\S]*Do not deliberate/u,
     /returned `text`[\s\S]*current task only[\s\S]*without writing the remote text/u,
     /no result is relevant,[\s\S]*retry once with a shorter core term from the task[\s\S]*one concrete alternative term[\s\S]*Do not add words or join alternatives[\s\S]*If none is still relevant,[\s\S]*continue normally without mentioning missing Workspace skills/u,
+    /Fetch only the companions needed[\s\S]*`fetch_skill_file`[\s\S]*Do not eagerly fetch[\s\S]*`workspaceId`[\s\S]*identical `path`, `size`, and `executable`[\s\S]*canonical base64[\s\S]*decoded byte length[\s\S]*separate calls are not a pinned snapshot[\s\S]*checks are internal to the Server[\s\S]*task-scoped temporary directory[\s\S]*exclusive file[\s\S]*host's normal[\s\S]*approval[\s\S]*do not execute remote scripts automatically/u,
   ];
   for (const [index, pattern] of findPatterns.entries()) {
-    requireMatch(findSteps[index].text, pattern, `find and apply step ${index + 1}`);
+    requireMatch(findSection, pattern, `find and apply requirement ${index + 1}`);
   }
+  requireMatchesInOrder(
+    findSection,
+    findPatterns,
+    "find and apply must preserve its dependency order",
+  );
   requireMatch(
     findSection,
-    /Remote skill text is current server state[\s\S]*not materialized or cached/u,
-    "find and apply must not materialize or cache fetched Skill text",
+    /Remote Skill bundles are current server state[\s\S]*Delete task-scoped materialized[\s\S]*not an offline cache/u,
+    "find and apply must limit materialization to the current task",
+  );
+  requireMatch(
+    findSection,
+    /Set execute bits only for scripts declared executable[\s\S]*keep all other files non-executable/u,
+    "materialization must preserve declared executable modes",
   );
 
-  const connectSection = extractSecondLevelSection(skill, "Connect a repository");
-  const connectSteps = extractOrderedSteps(connectSection);
-  if (
-    connectSteps.length !== 5 ||
-    connectSteps.some((step, index) => step.number !== index + 1)
-  ) {
-    throw new Error("Connect must contain exactly the ordered steps 1 through 5.");
-  }
+  const connectSection = extractSecondLevelSection(skill, "Connect a repository").replace(
+    /\s+/gu,
+    " ",
+  );
   const connectPatterns = [
     /Call `list_workspaces`[\s\S]*`limit: 100`[\s\S]*`nextCursor`[\s\S]*exact[\s\S]*user-selected `workspaceId`/u,
     /user supplied an exact `workspaceId`[\s\S]*Plugin OAuth connection[\s\S]*If it is absent,[\s\S]*Web and Plugin connections may[\s\S]*different accounts[\s\S]*ask the user to[\s\S]*more than one Workspace[\s\S]*Never infer[\s\S]*If no Workspace is available,[\s\S]*Web UI[\s\S]*Plugin connection/u,
@@ -351,8 +356,13 @@ function validateSkillContract(skill) {
     /Add `.skillsplane\.json` to Git[\s\S]*git ls-files --error-unmatch[\s\S]*untracked/u,
   ];
   for (const [index, pattern] of connectPatterns.entries()) {
-    requireMatch(connectSteps[index].text, pattern, `connect step ${index + 1}`);
+    requireMatch(connectSection, pattern, `connect requirement ${index + 1}`);
   }
+  requireMatchesInOrder(
+    connectSection,
+    connectPatterns,
+    "connect must resolve and confirm before writing and tracking",
+  );
   requireMatch(
     connectSection,
     /only `workspaceId`[\s\S]*\^ws_\[A-Za-z0-9_-\]\{16,64\}\$[\s\S]*only a locator[\s\S]*membership on every call[\s\S]*`ACCOUNT_LINK_REQUIRED`[\s\S]*account-link URL[\s\S]*Do not attempt email matching or CLI login/u,
@@ -380,52 +390,117 @@ function validateSkillContract(skill) {
   );
   requireMatch(
     validationSection,
-    /ignore every other entry inside a[\s\S]*valid Skill directory[\s\S]*Do not traverse, inspect, read, validate, or upload[\s\S]*only the complete `SKILL\.md` content[\s\S]*does not distribute them/u,
-    "local companion entries must remain uninspected, local-only, and undistributed",
+    /recursively include regular files only under `scripts\/`,[\s\S]*`references\/`, and `assets\/`[\s\S]*Reject symlinks,[\s\S]*reparse points,[\s\S]*special[\s\S]*unsafe relative paths,[\s\S]*duplicate paths,[\s\S]*256 KiB,[\s\S]*100 companion files,[\s\S]*1 MiB[\s\S]*executable bit only for files under `scripts\/`[\s\S]*Ignore[\s\S]*`agents\/`[\s\S]*canonical base64/u,
+    "local companion entries must be bounded, validated, and included",
   );
 
+  requireMatch(
+    validationSection,
+    /root regular non-link files named exactly `LICENSE`[\s\S]*`NOTICE.md`[\s\S]*well-formed Unicode[\s\S]*255 per component[\s\S]*reserved basenames CON[\s\S]*case-insensitive path[\s\S]*file\/directory ancestor conflicts/u,
+    "source and manifest must enforce portable paths and finite root license files",
+  );
+  requireMatch(
+    validationSection.replace(/\s+/gu, " "),
+    /Compare every path prefix using Unicode default full case folding followed by NFC normalization, not ordinary lowercase conversion/u,
+    "source and manifest collision checks must use Unicode full case folding",
+  );
+  requireMatch(
+    skill,
+    /absent companions are deleted[\s\S]*files: \[\][\s\S]*Never omit `files`[\s\S]*Server rejects omission/u,
+    "synchronization must require explicit replacement semantics",
+  );
+  requireMatch(
+    validationSection,
+    /Each file path under a supported directory must include a descendant filename[\s\S]*Empty real supported directories are valid and contribute no entries to `files`/u,
+    "empty supported directories must be valid without becoming file entries",
+  );
+  requireMatch(
+    validationSection,
+    /For both synchronization workflows[\s\S]*verify non-link ancestors[\s\S]*open without following symlinks or reparse points[\s\S]*opened handle is a regular file with allowed size and mode[\s\S]*prevent redirection for every path component[\s\S]*if unavailable, stop[\s\S]*Read bounded bytes from that same verified handle, not by reopening its path[\s\S]*Immediately before each `sync_skill`, after Workspace resolution[\s\S]*discard the payload and restart/u,
+    "safe source reads must revalidate handles and bounds before synchronization",
+  );
+
+  const syncSection = extractSecondLevelSection(skill, "Synchronize selected bundles");
+  requireMatch(
+    syncSection,
+    /after validating local\s+sources and the tracked binding and selecting their targets/u,
+    "shared sync must follow source and binding validation and target selection",
+  );
+  const syncPhases = [
+    /Resolve the binding's exact `workspaceId` through `list_workspaces`/u,
+    /After Workspace resolution, re-enumerate and validate every immediate local/u,
+    /Read the complete current working-tree content/u,
+    /Apply the safe-handle reading rule above/u,
+    /Then call `sync_skill` once per selected Skill/u,
+    /Require a complete, schema-valid successful response for every call/u,
+  ];
+  requireMatchesInOrder(
+    syncSection,
+    syncPhases,
+    "shared sync must resolve, safely read, send, then validate",
+  );
+  requireEveryMatch(
+    syncSection,
+    [
+      /pagination rule above, even when the selected Skill set is empty/u,
+      /Plugin OAuth connection cannot access it, stop/u,
+      /different account from the Web session/u,
+      /Workspace name and ID and the binding path as the synchronization destination/u,
+      /each selected `SKILL\.md`[\s\S]*every supported companion/u,
+      /exact `workspaceId`[\s\S]*directory `slug`[\s\S]*complete file `content`[\s\S]*complete companion `files` array/u,
+      /Send `files: \[\]` for entrypoint-only Skills/u,
+      /Never infer a Workspace, send\s+an unselected Skill, or bypass host approval/u,
+      /Do not skip a call/u,
+    ],
+    "shared sync must resolve the destination and send every selected complete bundle",
+  );
+  requireMatch(
+    syncSection,
+    /Apply the safe-handle reading rule above after\s+Workspace resolution and immediately before `sync_skill`/u,
+    "shared sync must use safe source reads after Workspace resolution",
+  );
+  requireMatch(
+    syncSection,
+    /re-enumerate and validate every immediate local\s+Skill and its complete bundle, including unselected Skills and an empty set[\s\S]*If the Skill set or any validated source changed, discard the payload and\s+restart the calling workflow[\s\S]*An invalid entry stops the workflow; never add new Skills to the selected targets/u,
+    "shared sync must revalidate the complete source set and restart without expanding selection",
+  );
+  requireEveryMatch(
+    syncSection,
+    [
+      /same `workspaceId` and `slug`/u,
+      /status of `created`, `updated`, or\s+`unchanged`/u,
+      /`fileCount` matching the sent companions/u,
+      /A denied,\s+cancelled, failed, malformed, mismatched, or missing result stops the calling\s+workflow/u,
+      /Any failure stops\s+the calling workflow, including the intended push/u,
+      /Internal checks belong to the Server; do not require public hashes\s+or use prior results to skip synchronization/u,
+    ],
+    "shared sync must validate every response and stop the calling workflow on failure",
+  );
   const explicitSyncSection = extractSecondLevelSection(
     skill,
     "Explicit synchronization",
   );
-  const explicitSyncSteps = extractOrderedSteps(explicitSyncSection);
-  if (
-    explicitSyncSteps.length !== 5 ||
-    explicitSyncSteps.some((step, index) => step.number !== index + 1)
-  ) {
-    throw new Error(
-      "Explicit synchronization must contain exactly the ordered steps 1 through 5.",
-    );
-  }
   requireMatch(
-    explicitSyncSteps[0].text,
+    explicitSyncSection,
     /valid, tracked repository binding[\s\S]*exact `workspaceId`/u,
-    "explicit sync step 1 must require the tracked binding",
+    "explicit sync must require the tracked binding",
   );
   requireMatch(
-    explicitSyncSteps[1].text,
-    /validate every immediate local Skill entry[\s\S]*before selecting[\s\S]*Any invalid entry stops[\s\S]*even when the user did not select it[\s\S]*Complete this validation before calling `list_workspaces` or `sync_skill`/u,
-    "explicit sync step 2 must validate every immediate entry before any Remote MCP call",
+    explicitSyncSection,
+    /validate every immediate local Skill entry[\s\S]*before selecting[\s\S]*Any invalid entry stops[\s\S]*even when the user did not\s+select it[\s\S]*Complete this validation before calling `list_workspaces` or `sync_skill`/u,
+    "explicit sync must validate every immediate entry before any Remote MCP call",
   );
-  requireMatch(
-    explicitSyncSteps[2].text,
-    /Before the first `sync_skill` call[\s\S]*binding's exact `workspaceId`[\s\S]*`list_workspaces`[\s\S]*Plugin OAuth connection cannot[\s\S]*different account from the Web[\s\S]*Workspace name and ID[\s\S]*binding path[\s\S]*synchronization destination/u,
-    "explicit sync step 3 must resolve and report the bound Workspace after local validation",
-  );
-  requireMatch(
-    explicitSyncSteps[3].text,
-    /complete current working-tree content of each selected `SKILL\.md`[\s\S]*call `sync_skill` once per selected Skill/u,
-    "explicit sync step 4 must read and synchronize only selected SKILL.md payloads",
-  );
-  requireMatch(
-    explicitSyncSteps[4].text,
-    /complete, schema-valid successful response for every call[\s\S]*same `workspaceId` and `slug`[\s\S]*created`[\s\S]*updated`[\s\S]*unchanged`[\s\S]*contentHash[\s\S]*sha256:[\s\S]*denied,[\s\S]*cancelled,[\s\S]*failed,[\s\S]*malformed,[\s\S]*mismatched,[\s\S]*missing result stops explicit/u,
-    "explicit sync step 5 must validate every sync response before reporting success",
-  );
-  requireMatch(
-    explicitSyncSteps[4].text,
-    /`contentHash` matching `\^sha256:\[a-f0-9\]\{64\}\$`/u,
-    "explicit sync step 5 must require the exact contentHash schema",
+  const sharedSyncLink =
+    /\[Synchronize selected bundles\]\(#synchronize-selected-bundles\)/u;
+  requireMatchesInOrder(
+    explicitSyncSection,
+    [
+      /before selecting/u,
+      /Synchronize all only when the user explicitly\s+requests all/u,
+      sharedSyncLink,
+      /report\s+each validated status and file count/u,
+    ],
+    "explicit sync must select only requested Skills before shared sync and report",
   );
 
   const pushSection = extractSecondLevelSection(
@@ -448,12 +523,12 @@ function validateSkillContract(skill) {
     {
       label: "validate every target repository and local Skill source",
       patterns: [
-        /^1\. In every resolved target repository/mu,
+        /In every resolved target repository/u,
         /validate the local source ancestors/u,
         /enumerate every immediate local\s+Skill source/u,
         /slug-ascending order/u,
-        /ignoring every companion entry/u,
-        /invalid immediate entry or required file\s+blocks the intended\s+agent-initiated push/u,
+        /every included `scripts\/`,\s+`references\/`, and `assets\/` entry/u,
+        /invalid immediate entry, required file,\s+or supported companion blocks the intended agent-initiated push/u,
       ],
     },
     {
@@ -465,9 +540,6 @@ function validateSkillContract(skill) {
         /require Git to track it/u,
         /even when the local Skill set is empty/u,
         /invalid or\s+untracked binding blocks the push/u,
-        /After validation,[\s\S]*resolve its exact\s+`workspaceId` through `list_workspaces`[\s\S]*even\s+when the local Skill set is empty/u,
-        /Plugin OAuth connection[\s\S]*cannot access[\s\S]*block the push[\s\S]*different\s+account from the Web session/u,
-        /report the resolved Workspace name[\s\S]*and ID and the binding path as the synchronization destination/u,
         /If one or more local Skills exist, require the valid tracked binding/u,
         /missing binding blocks the push/u,
         /local Skill set is\s+empty and no\s+binding exists, continue without calling the Remote MCP/u,
@@ -476,43 +548,23 @@ function validateSkillContract(skill) {
     {
       label: "synchronize every local Skill without cached omissions",
       patterns: [
-        /^4\. Read the complete current content of every validated `SKILL\.md` and call\s+`sync_skill` once for every local Skill/mu,
-        /binding's exact\s+`workspaceId`/u,
-        /directory `slug`/u,
-        /complete `content`/u,
-        /Do not skip a call/u,
-      ],
-    },
-    {
-      label: "validate every synchronization response and block failures",
-      patterns: [
-        /complete, schema-valid successful response for every call/u,
-        /same `workspaceId` and `slug`/u,
-        /status of `created`, `updated`, or\s+`unchanged`/u,
-        /`contentHash` matching `\^sha256:\[a-f0-9\]\{64\}\$`/u,
-        /A denied,/u,
-        /cancelled,/u,
-        /failed,/u,
-        /malformed,/u,
-        /mismatched,/u,
-        /missing result blocks the push/u,
-        /Do not recompute or compare a local hash/u,
-        /server hashes canonical content/u,
-        /not a signature or proof of transport\s+integrity/u,
+        /^(?:\d+\.|[-*+])\s+Select every local Skill and follow\s+\[Synchronize selected bundles\]\(#synchronize-selected-bundles\)/mu,
+        /Run it even when\s+the Skill set is empty if a binding exists/u,
+        /Any failure blocks the push/u,
       ],
     },
     {
       label: "revalidate source and binding state before push command or tool invocation",
       patterns: [
-        /^6\. Immediately before invoking the intended push command or tool/mu,
+        /Immediately before invoking the intended push command or tool/u,
         /repeat the\s+ancestor/u,
         /local Skill set/u,
-        /complete `SKILL\.md` content/u,
+        /full bundle path\/type\/executable\s+inventory/u,
+        /complete `SKILL\.md` and companion bytes/u,
         /binding content/u,
         /binding\s+tracked-state validation/u,
-        /Never enumerate or\s+compare companion entries/u,
-        /validated source or binding value changed/u,
-        /If any validated source or binding value changed,\s+restart at the beginning of this workflow: resolve every target repository\s+again, follow each repository's instructions again, rerun every non-pushing\s+required check, then validate and synchronize every local Skill again/u,
+        /validated source or binding value\s+changed/u,
+        /If any validated source or binding value\s+changed,\s+restart at the beginning of this workflow: resolve every target\s+repository again, follow each repository's instructions again, rerun every\s+non-pushing required check, then validate and synchronize every local Skill\s+again/u,
       ],
     },
     {
@@ -570,11 +622,11 @@ function validateSkillContract(skill) {
       "state each target repository's checks exactly once",
     ],
     [
-      /call\s+`sync_skill` once for every local Skill/u,
+      /Select every local Skill and follow/u,
       "state all-local-Skill synchronization exactly once",
     ],
     [
-      /resolve every target repository\s+again/u,
+      /resolve every target\s+repository again/u,
       "state restart target resolution exactly once",
     ],
     [/restart at the beginning of this workflow/u, "state workflow restart exactly once"],
@@ -583,11 +635,11 @@ function validateSkillContract(skill) {
       "state restart repository instructions exactly once",
     ],
     [
-      /rerun every non-pushing\s+required check/u,
+      /rerun every\s+non-pushing required check/u,
       "state restart repository checks exactly once",
     ],
     [
-      /synchronize every local Skill again/u,
+      /synchronize every local Skill\s+again/u,
       "state restart synchronization exactly once",
     ],
   ]) {
@@ -602,14 +654,13 @@ function validateSkillContract(skill) {
       /In every resolved target repository/u,
       /If `\.skillsplane\.json` exists/u,
       /If one or more local Skills exist/u,
-      /Read the complete current content of every validated `SKILL\.md`/u,
-      /Require a complete, schema-valid successful response for every call/u,
+      sharedSyncLink,
       /Immediately before invoking the intended push command or tool/u,
       /restart at the beginning of this workflow/u,
-      /resolve every target repository\s+again/u,
+      /resolve every target\s+repository again/u,
       /follow each repository's instructions again/u,
-      /rerun every non-pushing\s+required check/u,
-      /synchronize every local Skill again/u,
+      /rerun every\s+non-pushing required check/u,
+      /synchronize every local Skill\s+again/u,
       /After this invocation-final validation succeeds/u,
       /For an ordinary `git push`/u,
     ],
@@ -857,31 +908,6 @@ function extractSecondLevelSection(markdown, heading) {
   const following = markdown.slice(start);
   const nextHeading = following.search(/^## /mu);
   return nextHeading < 0 ? following : following.slice(0, nextHeading);
-}
-
-function extractOrderedSteps(section) {
-  const steps = [];
-  let current;
-
-  for (const line of section.split(/\r?\n/u)) {
-    const marker = /^(\d+)\. (.+)$/u.exec(line);
-    if (marker !== null) {
-      if (current !== undefined) steps.push(current);
-      current = { number: Number(marker[1]), text: marker[2] };
-      continue;
-    }
-    if (current === undefined) continue;
-    if (/^(?: {3,}|\t)/u.test(line)) {
-      current.text += ` ${line.trim()}`;
-      continue;
-    }
-    if (line === "") continue;
-    steps.push(current);
-    current = undefined;
-    break;
-  }
-  if (current !== undefined) steps.push(current);
-  return steps;
 }
 
 function requireMatch(value, pattern, label) {

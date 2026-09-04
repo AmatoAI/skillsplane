@@ -14,9 +14,14 @@ The Plugin uses host-managed OAuth with `https://skillsplane.com/api/mcp`.
 The server checks the account's current Workspace access on each call.
 `.skillsplane.json` stores only a Workspace ID, not a credential.
 
-Sync sends repository-local `SKILL.md` content. Authors must keep secrets out of
-that content. The Plugin has no separate token store or offline Skill cache;
-the host controls its own permissions and conversation retention.
+Sync sends repository-local `SKILL.md` content and supported companion files.
+Authors must keep secrets out of the complete bundle. See the bundled Skill for
+the supported paths and limits. Content and bundle hashes are internal server
+checks, not public synchronization requirements or results.
+
+The Plugin has no separate token store or offline Skill cache. Retrieved files
+are temporary task-scoped copies; scripts are not executed automatically. The
+host controls its own permissions and conversation retention.
 
 Pre-push synchronization depends on the agent following the bundled Skill.
 It does not intercept pushes independently started by a user, IDE, or another

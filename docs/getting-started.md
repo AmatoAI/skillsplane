@@ -123,6 +123,12 @@ instructions. Search matches a literal substring of the slug, name, or
 description, so a short name or phrase works best. If nothing relevant exists,
 the agent can continue with the task without a Workspace Skill.
 
+With bundle support, `fetch` returns the entrypoint and a file manifest. The agent
+retrieves only needed companions with `fetch_skill_file` and validates them before
+use. Files are materialized in a temporary task directory, not your repository or
+an offline cache. Scripts are not executed automatically. Separate fetch calls
+read current state and are not a pinned snapshot.
+
 You can verify the read path by asking the agent to list Workspaces, search for
 an existing Skill by its exact name, and fetch that result. Do not test write
 access by overwriting a real Skill unnecessarily.
@@ -150,13 +156,24 @@ Sync .agents/skills/code-review/SKILL.md to the connected Workspace.
 
 The agent validates all immediate local Skill entries, confirms the bound
 Workspace is accessible, and syncs the selected Skill. Each successful response
-reports `created`, `updated`, or `unchanged`, with a server content hash. A sync
-replaces that Workspace Skill's current content. It does not commit or push Git
-changes by itself.
+reports `created`, `updated`, or `unchanged`, with the companion file count. Hashes
+remain internal to the server. A sync replaces that Workspace Skill's current
+entrypoint and complete companion set. Missing companions are deleted; an empty
+list removes all companions. There is no remote history or undo. Sync does not
+commit or push Git changes by itself.
 
-In this version, only `SKILL.md` is synchronized. Companion files in `scripts/`,
-`references/`, `assets/`, and `agents/` stay local. Global Skills and Skills
-installed by other Plugins are not implicitly uploaded.
+Supported companions are regular files under `scripts/`, `references/`, and
+`assets/`, plus root `LICENSE`, `LICENSE.txt`, `LICENSE.md`, `NOTICE`, `NOTICE.txt`,
+and `NOTICE.md`. `agents/` stays local. Limits are 256 KiB per file, 100 companions,
+and 1 MiB for the complete bundle. See the
+[bundled Skill](../plugins/agent-plugins/skillsplane/skills/use-workspace-skills/SKILL.md)
+for portable path and safe-read requirements. Global Skills and Skills installed
+by other Plugins are not implicitly uploaded.
+
+This workflow requires the hosted service's matching five-tool bundle contract.
+Before activating it through a public catalog, verify service rollout, a fresh
+client installation, OAuth, and live entrypoint/companion synchronization and
+retrieval. Passing this repository's tests does not prove those checks.
 
 Before a push initiated by the agent, the bundled workflow synchronizes all local
 Skills in every target repository. A binding is required when local Skills exist.

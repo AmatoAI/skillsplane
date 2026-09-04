@@ -14,10 +14,10 @@ SkillsPlane は、Workspace で共有する Skill をエージェントから検
 
 - **共有した指示を使う。** 実装やレビューに合う Workspace Skill を探し、最新の指示を適用します。
 - **リポジトリを接続する。** Skill の検索先・同期先となる Workspace を選びます。
-- **作成した Skill を共有する。** リポジトリ内の `SKILL.md` を指定して同期できます。
+- **作成した Skill を共有する。** リポジトリ内の `SKILL.md` と対応する添付ファイルを同期できます。
   エージェントが push する前には、対象リポジトリの全ローカル Skill を同期します。
 
-Plugin は利用手順を提供し、Workspace が Skill 本文を管理します。
+Plugin は利用手順を提供し、Workspace が Skill 本文と添付ファイルを管理します。
 認証には、エージェントのクライアントが管理する SkillsPlane への OAuth 接続を使います。
 
 ## はじめる
@@ -75,7 +75,10 @@ plugins/agent-plugins/skillsplane/
 ```
 
 Remote MCP の接続先は `https://skillsplane.com/api/mcp` です。
-利用するツールは `list_workspaces`、`search`、`fetch`、`sync_skill` の4つです。
+添付対応の手順には `list_workspaces`、`search`、`fetch`、`fetch_skill_file`、
+`sync_skill` の5つが必要です。対応するサービス側の反映が前提で、source の検証だけでは
+本番で利用できることを意味しません。実環境の確認が済むまでは、公開カタログの配布を
+この手順へ切り替えないでください。
 
 Codex と Cursor のカタログは、同じ標準パッケージを参照します。
 クライアント別の Plugin 本体やビルドは不要です。インストール対応と、本番 OAuth・
@@ -86,8 +89,11 @@ Codex と Cursor のカタログは、同じ標準パッケージを参照しま
 
 - Git 管理する `.skillsplane.json` には接続先 Workspace ID だけを記録します。
   サーバーが各操作でアカウントのアクセス権を確認します。
-- 同期対象は `.agents/skills/<slug>/SKILL.md` の本文です。この version では
-  `scripts/`、`references/`、`assets/` などの添付ファイルはローカルに残ります。
+- 同期対象は `.agents/skills/<slug>/SKILL.md` と、上限内の `scripts/`、`references/`、
+  `assets/`、対応する直下のライセンス・NOTICE ファイルです。`agents/` はローカルに残ります。
+  ハッシュはサーバー内部の確認用で、同期結果として利用者へ提示しません。
+- 同期は添付も含めた全体の置き換えです。送らない添付は削除され、空の添付一覧は全添付を
+  削除します。リモートの履歴・undo はありません。
 - Plugin 自身は認証情報の保管や Skill のオフラインキャッシュを行いません。
   権限や会話の保存は利用するクライアントの設定に従います。
 - push 前同期はエージェントが指示に従うことで動作します。
