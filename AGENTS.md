@@ -10,7 +10,8 @@ This repository maintains one portable Agent Plugins 1.0.0 package at
 - The bundled Skill is the source of truth for discovery, repository binding,
   synchronization, and the cooperative pre-push workflow. Update its validator
   and behavioral tests when changing that contract.
-- Remote MCP exposes `list_workspaces`, `search`, `fetch`, and `sync_skill` at
+- The bundle workflow requires `list_workspaces`, `search`, `fetch`,
+  `fetch_skill_file`, and `sync_skill` at
   `https://skillsplane.com/api/mcp`, using host-managed OAuth.
 - Hosted service implementation, credentials, local caches, client adapters,
   executables, and internal planning/operations documents belong elsewhere.
@@ -33,6 +34,8 @@ do not describe an unreviewed PR as merge-ready. Create a draft only when reques
 Static checks do not prove client discovery, OAuth, or live tool operation. Record
 those results separately before distributing a release, using the official Agent
 Plugins / Skill validators and a fresh client installation.
+Do not activate the bundle workflow through the public catalogs until the hosted
+service exposes the matching five-tool contract and its live checks pass.
 
 ## Portable content digest
 
