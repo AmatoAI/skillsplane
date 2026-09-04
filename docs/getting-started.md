@@ -33,21 +33,61 @@ Installation, enablement, and updates are client-managed; Agent Plugins does
 not define a universal install command. Use a release's exact commit when
 reproducing a published artifact.
 
-### Codex development install
+### Codex: install from GitHub
 
-For Codex versions exposing `codex plugin` and supporting portable Agent Plugins,
-run these commands from the cloned repository root:
+With a Codex version that supports portable Agent Plugins and `codex plugin`:
 
 ```sh
-codex plugin marketplace add .
-codex plugin add skillsplane@skillsplane-development
+codex plugin marketplace add https://github.com/AmatoAI/skillsplane.git
+codex plugin add skillsplane@skillsplane
 ```
 
-This registers the repository's development marketplace and installs its portable
-package. It does not register a public catalog listing. See
-[OpenAI's Plugin documentation](https://developers.openai.com/plugins) for the
-client's Plugin model. If the command is unavailable, check your client version
-and its Plugin support before continuing.
+No manual clone or build is required for this route. The repository's
+`.agents/plugins/marketplace.json` points at the portable package. To test a
+local checkout instead, use `codex plugin marketplace add .` from its root,
+then the same `codex plugin add` command. Use a separate client profile when
+comparing local and Git installations with the same marketplace name.
+
+If you previously installed `skillsplane@skillsplane-development`, remove that
+installation and its old marketplace before adding the public marketplace so
+that the same MCP server and Skill are not loaded twice.
+
+### Cursor: install the same Agent Plugin
+
+Cursor supports the root `plugin.json` and standard `mcp.json` directly; no
+Cursor-specific Plugin manifest or duplicate Skill is needed.
+
+For a local install, clone this repository as above, then run from its root:
+
+```sh
+mkdir -p ~/.cursor/plugins/local
+ln -s "$PWD/plugins/agent-plugins/skillsplane" ~/.cursor/plugins/local/skillsplane
+```
+
+If the destination already exists, inspect the existing installation before
+replacing it. Restart Cursor or run **Developer: Reload Window**, then open
+**Customize** and confirm `use-workspace-skills` and the SkillsPlane MCP server.
+Local Plugin imports must be allowed by your organization's policy. An installed
+marketplace Plugin with the same name takes precedence over a local copy.
+
+For Teams/Enterprise distribution, open **Dashboard → Plugins → Add Marketplace
+→ Import from Repo** and use `https://github.com/AmatoAI/skillsplane`. The root
+`.cursor-plugin/marketplace.json` points to the same portable package. Review the
+imported Plugin, then install it from **Customize**. Public Cursor Marketplace
+listing is a separate review process; this repository does not imply a listing.
+See [Cursor's installation documentation](https://cursor.com/docs/plugins).
+
+### Other clients
+
+Use `plugins/agent-plugins/skillsplane/` as the Plugin root in clients that
+support Agent Plugins 1.0.0, Skills, Streamable HTTP MCP, and OAuth. A Git
+repository root and a Plugin root are different in this repository.
+
+Claude Code's marketplace format is different. These commands and catalogs do
+not provide a Claude Code installation; this repository publishes one standard
+Agent Plugin rather than a Claude-specific adapter.
+
+### Authenticate
 
 Start a new task after installation. Enable the Plugin and complete the
 SkillsPlane OAuth flow offered by the client. The configured Remote MCP endpoint

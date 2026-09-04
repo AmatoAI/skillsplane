@@ -1,7 +1,7 @@
 {
-  "name": "skillsplane-development",
+  "name": "skillsplane",
   "interface": {
-    "displayName": "SkillsPlane Development"
+    "displayName": "SkillsPlane"
   },
   "plugins": [
     {

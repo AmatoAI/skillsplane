@@ -5,6 +5,8 @@
       "README.md",
       "CONTRIBUTING.md",
       "SECURITY.md",
+      ".agents/plugins/*.json",
+      ".cursor-plugin/*.json",
       "plugins/**/*.json",
       "plugins/**/*.mjs",
       "scripts/**/*.mjs",
