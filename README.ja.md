@@ -26,12 +26,22 @@ SkillsPlane のアカウントと Workspace への参加権限、および Skill
 OAuth に対応した Agent Plugins クライアントが必要です。
 
 1. [SkillsPlane](https://skillsplane.com/) で Workspace を作成するか、既存の Workspace に参加します。
-2. クライアントのローカル Plugin 導入手順で `plugins/agent-plugins/skillsplane/` を読み込み、
-   Plugin を有効にして OAuth 認証を完了します。
+2. 下記の Codex または Cursor の手順で導入し、Plugin を有効にして OAuth 認証を完了します。
 3. 新しいタスクで、アクセスできる Workspace をエージェントに一覧表示させ、接続先を選びます。
 4. 作業に合う Workspace Skill の検索・適用を依頼します。
 
-clone コマンド、Codex での開発用インストール、接続確認は
+### Codex
+
+```sh
+codex plugin marketplace add https://github.com/AmatoAI/skillsplane.git
+codex plugin add skillsplane@skillsplane
+```
+
+### Cursor
+
+Teams/Enterprise では **Dashboard → Plugins → Add Marketplace → Import from Repo** に
+`https://github.com/AmatoAI/skillsplane` を指定します。ローカル導入も可能です。
+同じ標準パッケージを使う手順と認証・接続確認は
 [導入ガイド](docs/getting-started.md) を参照してください。
 
 ## 依頼の例
@@ -67,11 +77,10 @@ plugins/agent-plugins/skillsplane/
 Remote MCP の接続先は `https://skillsplane.com/api/mcp` です。
 利用するツールは `list_workspaces`、`search`、`fetch`、`sync_skill` の4つです。
 
-**この checkout はソースと開発用の導入経路を提供します。** ローカル marketplace の名前は
-`skillsplane-development` です。公開カタログへの掲載、本番 OAuth、クライアントごとの
-一連の動作は、別途リリース時の確認が必要です。
-[標準の対応クライアント一覧](https://agent-plugins.org/compatible-clients) は、
-SkillsPlane の動作確認済み一覧ではありません。
+Codex と Cursor のカタログは、同じ標準パッケージを参照します。
+クライアント別の Plugin 本体やビルドは不要です。インストール対応と、本番 OAuth・
+一連のサービス動作の確認、公式カタログへの掲載は別です。
+[標準の対応クライアント一覧](https://agent-plugins.org/compatible-clients) も参照してください。
 
 ## データと権限
 

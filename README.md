@@ -35,14 +35,25 @@ that supports Skills, Streamable HTTP MCP, and OAuth. Plugin installation and
 enablement follow your client's instructions.
 
 1. Open [SkillsPlane](https://skillsplane.com/) and create or join a Workspace.
-2. Load `plugins/agent-plugins/skillsplane/` using your client's local Plugin
-   installation flow, then enable the Plugin and complete its OAuth sign-in.
+2. Install using the Codex or Cursor instructions below, then enable the Plugin
+   and complete its OAuth sign-in.
 3. Open a new task. Ask the agent to show the SkillsPlane Workspaces it can access,
    then select the Workspace to connect to your repository.
 4. Ask the agent to find and apply a relevant Workspace Skill.
 
-See the [installation guide](docs/getting-started.md) for the clone command,
-Codex development install, connection checks, and troubleshooting.
+### Codex
+
+```sh
+codex plugin marketplace add https://github.com/AmatoAI/skillsplane.git
+codex plugin add skillsplane@skillsplane
+```
+
+### Cursor
+
+Use **Dashboard → Plugins → Add Marketplace → Import from Repo** on a
+Teams/Enterprise plan with `https://github.com/AmatoAI/skillsplane`, or install
+the portable package locally. See the [installation guide](docs/getting-started.md)
+for local installation, authentication and connection checks.
 
 ## Try it
 
@@ -77,12 +88,11 @@ plugins/agent-plugins/skillsplane/
 The Remote MCP endpoint is `https://skillsplane.com/api/mcp`. The Plugin uses four
 tools: `list_workspaces`, `search`, `fetch`, and `sync_skill`.
 
-**This checkout provides source and a development install path.** Its local
-marketplace is named `skillsplane-development`. A public catalog listing,
-production OAuth, and client-specific end-to-end verification require separate
-release evidence. The standard's
-[compatible client list](https://agent-plugins.org/compatible-clients) describes
-client capabilities; it is not a SkillsPlane certification list.
+Codex and Cursor catalogs both reference this one standard package. No client
+adapter or build step is required. Client installation support does not establish
+production OAuth or end-to-end service verification; those checks and official
+catalog listings are separate. See the
+[compatible client list](https://agent-plugins.org/compatible-clients).
 
 ## Data and permissions
 

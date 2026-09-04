@@ -1,0 +1,12 @@
+{
+  "name": "skillsplane",
+  "owner": {
+    "name": "AmatoAI"
+  },
+  "plugins": [
+    {
+      "name": "skillsplane",
+      "source": "./plugins/agent-plugins/skillsplane"
+    }
+  ]
+}

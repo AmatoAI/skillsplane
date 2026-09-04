@@ -22,7 +22,7 @@
   "license": "Apache-2.0",
   "type": "module",
   "scripts": {
-    "lint": "biome check README.md CONTRIBUTING.md SECURITY.md .agents/plugins/marketplace.json plugins scripts test biome.json package.json tsconfig.json vitest.config.ts",
+    "lint": "biome check README.md CONTRIBUTING.md SECURITY.md .agents/plugins/marketplace.json .cursor-plugin/marketplace.json plugins scripts test biome.json package.json tsconfig.json vitest.config.ts",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "validate:artifact": "node scripts/validate-plugin-artifact.mjs",

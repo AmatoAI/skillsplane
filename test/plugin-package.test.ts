@@ -276,9 +276,9 @@ test("Skill preserves lookup, binding, source, and explicit sync contracts", () 
   );
 });
 
-test("development marketplace points directly to the portable package", () => {
-  assert.equal(marketplaceJson.name, "skillsplane-development");
-  assert.equal(marketplaceJson.interface.displayName, "SkillsPlane Development");
+test("public marketplace points directly to the portable package", () => {
+  assert.equal(marketplaceJson.name, "skillsplane");
+  assert.equal(marketplaceJson.interface.displayName, "SkillsPlane");
   const entry = marketplaceJson.plugins.find(
     (candidate: { name?: string }) => candidate.name === "skillsplane",
   );
@@ -290,6 +290,22 @@ test("development marketplace points directly to the portable package", () => {
     installation: "AVAILABLE",
     authentication: "ON_INSTALL",
   });
+});
+
+test("Cursor and Codex catalogs resolve the same portable package", () => {
+  const cursor = readJson(new URL("../.cursor-plugin/marketplace.json", import.meta.url));
+  assert.equal(cursor.name, marketplaceJson.name);
+  assert.equal(cursor.owner.name, pluginJson.author.name);
+  assert.equal(cursor.plugins.length, 1);
+  const entry = cursor.plugins[0];
+  assert.equal(entry.name, pluginJson.name);
+  assert.equal(entry.source, marketplaceJson.plugins[0].source.path);
+  const resolved = new URL(
+    `${entry.source}/plugin.json`,
+    new URL("../", import.meta.url),
+  );
+  assert.equal(resolved.href, new URL("plugin.json", pluginRoot).href);
+  assert.deepEqual(readJson(resolved), pluginJson);
 });
 
 // biome-ignore lint/suspicious/noExplicitAny: plugin fixture JSON is intentionally dynamic.
