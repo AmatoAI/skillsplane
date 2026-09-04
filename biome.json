@@ -1,0 +1,40 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.5.0/schema.json",
+  "files": {
+    "includes": [
+      "README.md",
+      "CONTRIBUTING.md",
+      "SECURITY.md",
+      "plugins/**/*.json",
+      "plugins/**/*.mjs",
+      "scripts/**/*.mjs",
+      "test/**/*.ts",
+      "*.json",
+      "*.ts",
+      "!**/.worktrees"
+    ]
+  },
+  "formatter": {
+    "enabled": true,
+    "indentStyle": "space",
+    "indentWidth": 2,
+    "lineWidth": 90
+  },
+  "overrides": [
+    {
+      "includes": [
+        "plugins/agent-plugins/skillsplane/plugin.json",
+        "plugins/agent-plugins/skillsplane/mcp.json"
+      ],
+      "formatter": {
+        "enabled": false
+      }
+    }
+  ],
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "preset": "recommended"
+    }
+  }
+}

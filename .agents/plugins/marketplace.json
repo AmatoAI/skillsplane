@@ -1,0 +1,20 @@
+{
+  "name": "skillsplane-development",
+  "interface": {
+    "displayName": "SkillsPlane Development"
+  },
+  "plugins": [
+    {
+      "name": "skillsplane",
+      "source": {
+        "source": "local",
+        "path": "./plugins/agent-plugins/skillsplane"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Developer Tools"
+    }
+  ]
+}

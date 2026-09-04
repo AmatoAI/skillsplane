@@ -1,0 +1,42 @@
+{
+  "name": "@skillsplane/plugin-development",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Development and validation workspace for the portable SkillsPlane Agent Plugin",
+  "keywords": [
+    "agent-plugin",
+    "codex",
+    "mcp",
+    "plugin",
+    "skill"
+  ],
+  "homepage": "https://skillsplane.com/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AmatoAI/skillsplane.git"
+  },
+  "bugs": {
+    "url": "https://github.com/AmatoAI/skillsplane/issues"
+  },
+  "author": "AmatoAI",
+  "license": "Apache-2.0",
+  "type": "module",
+  "scripts": {
+    "lint": "biome check README.md CONTRIBUTING.md SECURITY.md .agents/plugins/marketplace.json plugins scripts test biome.json package.json tsconfig.json vitest.config.ts",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "validate:artifact": "node scripts/validate-plugin-artifact.mjs",
+    "validate:plugin": "node scripts/validate-plugin-artifact.mjs --root plugins/agent-plugins/skillsplane --source-mode",
+    "verify": "pnpm lint && pnpm typecheck && pnpm test && pnpm validate:plugin"
+  },
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.5.0",
+    "@types/node": "^24.10.2",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.15"
+  },
+  "packageManager": "pnpm@11.17.0"
+}
