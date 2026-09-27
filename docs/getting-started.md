@@ -2,10 +2,13 @@
 
 [Back to README](../README.md) · [日本語の概要](../README.ja.md)
 
-Catalog installation is temporarily unavailable. The `status` tool and fresh-client
-OAuth have not yet passed live verification for this package. Both repository
-catalogs are empty; source-loading instructions below are for development
-validation only, not a verified production installation.
+Start with one routine you keep explaining to your AI: meeting notes, a review
+checklist, or your team's writing style. Save its instructions as a Skill, use it
+on a real task, and share it with a teammate who does similar work.
+
+**Source preview:** catalog installation is not yet available. Both repository
+catalogs are empty. The source-loading instructions below are for development
+validation, not a verified catalog installation.
 
 ## Prerequisites
 
