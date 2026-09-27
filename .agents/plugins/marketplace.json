@@ -1,0 +1,7 @@
+{
+  "name": "skillsplane",
+  "interface": {
+    "displayName": "SkillsPlane"
+  },
+  "plugins": []
+}
