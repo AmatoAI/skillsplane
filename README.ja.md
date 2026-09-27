@@ -1,50 +1,78 @@
-# SkillsPlane Agent Plugin
+# SkillsPlane
 
-**個人とチームの最新の Skill を、エージェントの作業に。**
+**「そのやり方、私のAIにも教えて。」**
 
-SkillsPlane は、Personal Skill と Team Workspace の Skill をエージェントから検索・適用し、
-リポジトリで作成した Skill を同期するための
-[Agent Plugin](https://agent-plugins.org/) です。
-[Apache 2.0](LICENSE) で提供する、クライアントに依存しない形式のパッケージです。
+AIに何度も説明して、ようやく自分好みの仕事ができるようになった。
+でも隣の人は、また同じことを一から説明している。
 
-[English](README.md) · [導入ガイド](docs/getting-started.md) ·
-[SkillsPlane](https://skillsplane.com/) · [開発への参加](CONTRIBUTING.md)
+SkillsPlaneは、うまくいった仕事の手順を **Skill** として残し、
+仲間のAIでも使えるようにするPluginです。
+まず自分の定番をひとつ。役に立ったら、同じ仕事をする人へ。
 
-## できること
+[English](README.md) · [使い方を見る](docs/getting-started.md) ·
+[SkillsPlane](https://skillsplane.com/)
 
-- **共有した指示を使う。** ホストの OAuth 接続で Workspace Skill の本文を検索・取得し、作業に適用します。
+> **ソース先行公開中：** カタログからの導入はまだ利用できません。
+> 現在の開発検証用セットアップは[導入ガイド](docs/getting-started.md)をご覧ください。
 
-設定用 `setup`、利用用 `use-workspace-skills`、同期用 `sync-workspace-skills` を分けています。
-同期は管理対象 Skill の変更完了後か、明示要求時に行います。
-Repository は `<repo>/.skillsplane.json` と `<repo>/.agents/skills/`、
-User は `~/.agents/skills/` を使い、OAuth アカウント固有の Personal に同期します。
-`~/.skillsplane.json` は読み書きしません。
-明示指定を優先し、指定がなければ repository binding の有無でスコープを選びます。
-無効な binding は別スコープへ切り替えず停止します。安全なローカル読取と OAuth 付き MCP はホストが提供します。
+## 「毎回説明していること」を、みんなの定番に
 
-## はじめる
+| こんなこと、ありませんか？ | 共有できるやり方 |
+| --- | --- |
+| 「議事録には決定事項・担当・期限を入れて」と毎回伝えている | チームで使う議事録のまとめ方 |
+| あの人のレビュー観点を、ほかのメンバーにも使ってほしい | 得意な人が書き出したチェックリスト |
+| 別の作業でも、また同じ文体や構成を説明している | 自分やチームが大切にしている文章の書き方 |
 
-ホスト側の `status` と、新規クライアントでの OAuth の動作確認が完了するまで、
-カタログからの導入は一時停止しています。Codex・Cursor のカタログには現在このパッケージを掲載していません。
-ソースからの読込みは開発検証用です。[導入ガイド](docs/getting-started.md)を参照してください。
+これは自分で作って共有できるSkillの例です。付属テンプレート集ではありません。
+Skillは、繰り返し使えるように書いた仕事の手順。何を残し、誰と使うかは自分で選べます。
 
-## 依頼の例
+## 最初は、役立つ手順をひとつだけ
 
-```text
-SkillsPlane でアクセスできる Workspace を一覧表示して。
-```
+1. **いつも説明していることを選ぶ。** 議事録の形式、レビューの観点、提案書を出す前の確認など。
+2. **手順をSkillとして残す。** 自分用はPersonalに。チームで使うものはTeam Workspaceへ。
+3. **いつもの言葉で仕事を頼む。** 接続した仲間のエージェントも、必要に応じて共有された手順を見つけて使えます。
 
-```text
-コードレビューに使える Workspace Skill を探して、この変更をレビューして。
-```
+たとえば、チームで議事録のSkillを共有したら：
 
 ```text
-.agents/skills/code-review/SKILL.md を、このリポジトリの接続先 Workspace に同期して。
+チームの議事録のまとめ方を使って、この打合せメモを整理して。
 ```
 
-同期用 Skill は `scope: personal` または `scope: workspace` と完全な bundle を送ります。
-Team のみ Git 管理された repository binding が必要です。選択した repository ファイルに binding がない場合、Personal に転送せず停止します。同期で commit や push は行わず、作業開始だけで全件同期しません。
-Plugin は Skill と Remote MCP 接続を提供し、ローカルファイル操作と承認はホストの既存機能を使います。
+使いながら、手順を磨くこともできます：
+
+```text
+決定事項と未決事項を分けるように手順を直して、Skillを更新して。
+```
+
+一人が磨いた手順を、仲間も次の仕事で使えるように。
+共有された手順を使った結果も、その仕事に合っているか確認して仕上げます。
+
+## 成果物だけでなく、その「作り方」を渡そう
+
+よい議事録を渡せば、その会議に役立つ。
+まとめ方も渡せば、次の人の仕事にも役立ちます。
+
+「それ、どうやったの？」と聞かれたら、どんな仕事に使える手順なのかも一緒に紹介してください。
+共有は、アクセス権のあるTeam Workspaceで。自分用のSkillが勝手に公開されることはありません。
+
+**同僚への紹介に、そのまま使える一文：**
+
+> AIに毎回説明していること、チームで共有しませんか。
+> SkillsPlaneは、一人が磨いた仕事の手順を、仲間のAIでも使えるようにするPluginです。
+> まずは議事録・レビュー・文章の書き方のうち、よく使うものをひとつから。
+>
+> ソース先行公開中：https://github.com/AmatoAI/skillsplane
+
+## 次に同じ仕事をする人を、一人思い浮かべてください
+
+その人が次の仕事で使えそうな手順を、ひとつ選ぶところから。
+「紹介された人の仕事に役立った」が、最初の目標です。
+
+現在の提供状況とセットアップは[導入ガイド](docs/getting-started.md)へ。
+利用にはSkillsPlaneのアカウントと対応エージェントが必要です。
+
+<details>
+<summary>パッケージ・権限・開発について</summary>
 
 ## パッケージと提供状況
 
@@ -93,3 +121,5 @@ Repository binding. Initial sync follows
 `sync-workspace-skills`: complete local bundles update the same destination and slug.
 
 同期はbegin → hostによる直接PUT → completeで確定します。短命URLから原本を転送し、サイズとSHA-256を検証します。bytesをMCP/LLMへ中継しません。
+
+</details>
