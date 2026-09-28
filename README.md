@@ -1,13 +1,16 @@
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/wordmark-dark.svg">
+  <img src="docs/assets/wordmark-light.svg" alt="SkillsPlane" width="420">
+</picture>
+
 # SkillsPlane
 
-**“Can my AI do it your way?”**
+**The right Skill. For the work at hand.**
 
-You finally get your AI to review work the way you like. Then a teammate starts
-from scratch, explaining the same things all over again.
-
-SkillsPlane lets you keep useful instructions as **Skills** and share them with
-your team, so their AI can use those instructions in their own work.
-Start with a method that works for you. Share it when someone else needs it.
+SkillsPlane helps your agent **search for relevant Skills, select what fits the
+task, and sync improvements**. A Skill is a reusable set of written instructions.
+Ask for the work you need; your agent searches for candidates and reads their
+content before choosing what to use.
 
 [日本語](README.ja.md) · [Getting started](docs/getting-started.md) ·
 [SkillsPlane](https://skillsplane.com/)
@@ -15,63 +18,45 @@ Start with a method that works for you. Share it when someone else needs it.
 > **Source preview:** the source is public; catalog installation is not yet available.
 > The [guide](docs/getting-started.md) explains the current development-only setup.
 
-## Less explaining. More of what works.
+## Search. Select. Sync.
 
-| The familiar frustration | What you can share |
+| Step | What it does |
 | --- | --- |
-| “Every meeting summary needs decisions, owners, and deadlines. Again.” | Your team's meeting-note instructions. |
-| “Can you check this the way our best reviewer does?” | A reviewer's written checklist, ready for teammates to use. |
-| “I've already explained our writing style in another task.” | Your preferred tone, structure, and examples. |
+| Search | Find Skills relevant to your current request. |
+| Select | Let your agent read the candidates and choose instructions that fit the task. |
+| Sync | Update managed Skills after completing changes or when you request it. |
 
-These are examples of Skills you can create and share, not a bundled template library.
-A Skill is a reusable set of written instructions. You choose what to save and who can use it.
+Search results are candidates, not a guarantee of suitability. Your agent checks
+the content, and you review the work it produces. After a successful sync, the
+next fetch returns the updated instructions.
 
-## One useful Skill is a good start
+## Start with the work you need
 
-1. **Pick something you keep explaining.** A meeting-note format, a review checklist,
-   or the steps you always follow before sending a proposal.
-2. **Keep the instructions as a Skill.** Use Personal Skills for your own work;
-   share team instructions in a Team Workspace.
-3. **Ask for work as usual.** A connected teammate's agent can find the shared
-   instructions and use them when relevant.
-
-For example, after your team has shared a meeting-note Skill:
+With a relevant Skill saved in Personal or a Team Workspace you can access,
+ask your connected agent:
 
 ```text
-Use our team's meeting-note instructions to summarize this meeting.
+Check this change for missing translations.
 ```
 
-Then, when you refine those instructions:
+Your agent can search for a translation-check Skill and select it for the task.
+When you improve those instructions:
 
 ```text
-Add a reminder to separate decisions from open questions, and sync the updated Skill.
+Add a check for missing plural forms and sync the updated Skill.
 ```
 
-You improve a method once. Teammates can use the updated instructions in later work.
-Shared instructions are a starting point; review the result for the task at hand.
+These are examples, not a bundled template library. Personal Skills are private;
+Team Workspaces make Skills available to authorized teammates.
 
-## Share the method, not just the result
+## How is this different from Git?
 
-A good summary helps one meeting. The instructions behind it can help the next person, too.
+Git can share Skills and track their history. SkillsPlane helps find relevant
+Skills for the current request and supports your agent in selecting what fits.
+Synchronization makes improved instructions available for later retrieval.
+Normal work, Git pushes, and task start do not trigger a full sync.
 
-When a teammate asks how you got a useful result, send them the instructions and
-explain the job they help with. Share through a Team Workspace with the appropriate access;
-your private Skills do not become public.
-
-**A short introduction you can copy:**
-
-> We keep explaining the same things to our AI. SkillsPlane lets us share the
-> instructions that work, so we can use them in our own tasks. Which routine
-> should we start with: meeting notes, reviews, or writing?
->
-> Source preview: https://github.com/AmatoAI/skillsplane
-
-## Make the first example yours
-
-Choose one recurring task and one person who does it too. Share the instructions
-that could help them the next time they do that work.
-
-See [getting started](docs/getting-started.md) for current availability and setup.
+See [getting started](docs/getting-started.md) for availability and setup.
 A SkillsPlane account and a compatible agent are required.
 
 <details>
