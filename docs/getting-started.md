@@ -2,9 +2,9 @@
 
 [Back to README](../README.md) · [日本語の概要](../README.ja.md)
 
-Start with one routine you keep explaining to your AI: meeting notes, a review
-checklist, or your team's writing style. Save its instructions as a Skill, use it
-on a real task, and share it with a teammate who does similar work.
+Start with a task and a relevant Skill in Personal or a Team Workspace you can access.
+Your agent searches for candidates, reads their instructions, and selects what fits.
+Sync managed Skill improvements after completing changes or when you request it.
 
 **Source preview:** catalog installation is not yet available. Both repository
 catalogs are empty. The source-loading instructions below are for development
